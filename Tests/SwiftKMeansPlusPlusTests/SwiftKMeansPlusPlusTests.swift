@@ -59,6 +59,26 @@ struct DeterminismTests {
 		}
 	}
 	
+	@Test func testClusterCentersDeterminism() async throws {
+		// Generate a collection of SIMD4 with random values
+		var gen = SeedableLinearCongruentialRandomNumberGenerator(seed: .init())
+		var collection: Array<SIMD4<Float>> = .init()
+		collection.reserveCapacity(100)
+		for _ in 0..<100 {
+			collection.append(SIMD4(.random(in: 0...1, using: &gen), .random(in: 0...1, using: &gen), .random(in: 0...1, using: &gen), .random(in: 0...1, using: &gen)))
+		}
+		
+		for i in 0...100 {
+			var clusterGen1 = SeedableLinearCongruentialRandomNumberGenerator(seed: UInt64(i))
+			let centers1 = collection.initialClusterCenters(upTo: 5, using: &clusterGen1)
+			
+			var clusterGen2 = SeedableLinearCongruentialRandomNumberGenerator(seed: .init(UInt64(i)))
+			let centers2 = collection.initialClusterCenters(upTo: 5, using: &clusterGen2)
+			
+			#expect(centers1 == centers2)
+		}
+	}
+	
 	@Test func testKMeansClustersDeterminism() async throws {
 		
 		// Generate a collection of SIMD4 with random values
