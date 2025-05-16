@@ -7,6 +7,7 @@
 
 import Foundation
 import simd
+import OrderedCollections
 
 extension Collection where Element: SIMD, Element.Scalar: BinaryFloatingPoint, Element.Scalar.RawSignificand: FixedWidthInteger, Self.Index: Hashable {
 	
@@ -24,23 +25,23 @@ extension Collection where Element: SIMD, Element.Scalar: BinaryFloatingPoint, E
 	/// Calculate initial cluster centers using the k-Means++ initialization algorithm, using the specified random number generator as a source of randomness.
 	///
 	/// See https://en.wikipedia.org/wiki/K-means++#Improved_initialization_algorithm for an explanation of this algorithm.
-	private func initialClusterCenters<R: RandomNumberGenerator>(upTo maxClusterCount: Int, using generator: inout R) -> [Element] {
+	internal func initialClusterCenters<R: RandomNumberGenerator>(upTo maxClusterCount: Int, using generator: inout R) -> [Element] {
 		// Start with one center chosen at random
 		guard let initialCenterIndex = indices.randomElement(using: &generator) else { return [] }
 		var centers = [self[initialCenterIndex]]
-		var remainingIndices = Set<Index>(indices).subtracting([initialCenterIndex])
+		var remainingIndices = OrderedSet<Index>(indices).subtracting([initialCenterIndex])
 		
 		// Until `maxClusterCount` centers are chosen, repeat choosing another center
 		repeat {
 			// Calculate distance squared between each point and the nearest center that has already been chosen
-			let remainingPointIndicesWithDistancesSquared = remainingIndices.reduce(into: [Index: Element.Scalar]()) { result, pointIndex in
+			let remainingPointIndicesWithDistancesSquared = remainingIndices.reduce(into: OrderedDictionary<Index, Element.Scalar>()) { result, pointIndex in
 				let point = self[pointIndex]
 				let distanceSquaredToNearestCenter = centers.map({ distanceSquared(point, $0) }).min()
 				result[pointIndex] = distanceSquaredToNearestCenter
 			}
 			
 			// Choose a point at random to be the new center, using squared distance as weighted probability
-			guard let weightedRandomPointIndex = remainingPointIndicesWithDistancesSquared.randomElement(weight: \.value, using: &generator) else { return centers }
+			guard let weightedRandomPointIndex = remainingPointIndicesWithDistancesSquared.elements.randomElement(weight: \.value, using: &generator) else { return centers }
 			
 			// Add the chosen point as a new center and remove it from the eligible points to be centers
 			centers.append(self[weightedRandomPointIndex.key])
