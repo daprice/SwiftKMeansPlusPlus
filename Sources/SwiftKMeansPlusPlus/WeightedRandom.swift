@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OrderedCollections
 
 public extension Int {
 	// Inspired by https://stackoverflow.com/a/30309951/6833424
@@ -113,7 +114,7 @@ public extension Collection {
 	func randomSample<W: BinaryFloatingPoint, R: RandomNumberGenerator>(count sampleCount: Int, weight: KeyPath<Self.Element, W>, using generator: inout R) -> [Self.Element] where Self.Index: Hashable, W.RawSignificand: FixedWidthInteger {
 		guard sampleCount < count else { return .init(self) }
 		
-		var remainingIndicesAndWeights: [Index: W] = indices.reduce(into: [:], { result, next in
+		var remainingIndicesAndWeights: OrderedDictionary<Index, W> = indices.reduce(into: [:], { result, next in
 			result[next] = self[next][keyPath: weight]
 		})
 		
